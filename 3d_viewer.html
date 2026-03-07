@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PMAS — 3D Head Viewer</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { background: #0d1117; color: #c9d1d9; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; overflow: hidden; }
+#canvas-container { width: 100vw; height: 100vh; position: relative; }
+canvas { display: block; }
+
+/* UI Panel */
+.panel {
+  position: absolute; top: 16px; left: 16px;
+  background: rgba(22,27,34,0.92); border: 1px solid #30363d;
+  border-radius: 12px; padding: 20px; width: 280px;
+  backdrop-filter: blur(12px);
+}
+.panel h1 { font-size: 18px; margin-bottom: 4px; color: #58a6ff; }
+.panel .subtitle { font-size: 12px; color: #8b949e; margin-bottom: 16px; }
+.panel label { display: block; font-size: 13px; color: #8b949e; margin-bottom: 4px; margin-top: 12px; }
+.panel select, .panel input[type=file] {
+  width: 100%; padding: 8px 10px; background: #0d1117; border: 1px solid #30363d;
+  border-radius: 6px; color: #c9d1d9; font-size: 13px; cursor: pointer;
+}
+.panel select:hover, .panel input[type=file]:hover { border-color: #58a6ff; }
+.btn-row { display: flex; gap: 8px; margin-top: 16px; }
+.btn {
+  flex: 1; padding: 8px 12px; border: 1px solid #30363d; background: #21262d;
+  color: #c9d1d9; border-radius: 6px; font-size: 12px; cursor: pointer; text-align: center;
+}
+.btn:hover { background: #30363d; border-color: #58a6ff; }
+.btn.active { background: #1f6feb; border-color: #58a6ff; color: #fff; }
+.info { margin-top: 16px; font-size: 11px; color: #8b949e; line-height: 1.5; }
+.info kbd { background: #21262d; padding: 2px 6px; border-radius: 3px; border: 1px solid #30363d; font-size: 10px; }
+
+/* Loading */
+#loading {
+  position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+  font-size: 16px; color: #58a6ff; display: none;
+}
+#loading .spinner {
+  width: 40px; height: 40px; border: 3px solid #30363d; border-top-color: #58a6ff;
+  border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 12px;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Bottom bar */
+.bottom-bar {
+  position: absolute; bottom: 16px; left: 50%; transform: translateX(-50%);
+  background: rgba(22,27,34,0.85); border: 1px solid #30363d;
+  border-radius: 8px; padding: 8px 16px; font-size: 12px; color: #8b949e;
+  backdrop-filter: blur(8px);
+}
+</style>
+</head>
+<body>
+
+<div id="canvas-container"></div>
+
+<div id="loading">
+  <div class="spinner"></div>
+  Загрузка модели...
+</div>
+
+<div class="panel">
+  <h1>PMAS 3D Viewer</h1>
+  <div class="subtitle">Просмотр 3D-моделей головы</div>
+
+  <label>Модель</label>
+  <select id="modelSelect">
+    <option value="models/LeePerrySmith.glb">Lee Perry-Smith (скан головы)</option>
+    <option value="models/facecap.glb">Face Cap (лицо с морфами)</option>
+  </select>
+
+  <label>Загрузить свою модель (.glb / .gltf)</label>
+  <input type="file" id="fileInput" accept=".glb,.gltf">
+
+  <div class="btn-row">
+    <button class="btn" id="btnWireframe">Wireframe</button>
+    <button class="btn" id="btnNormals">Нормали</button>
+    <button class="btn" id="btnReset">Сброс</button>
+  </div>
+
+  <div class="btn-row">
+    <button class="btn" id="btnLight1">Свет 1</button>
+    <button class="btn" id="btnLight2">Свет 2</button>
+    <button class="btn" id="btnLight3">Студия</button>
+  </div>
+
+  <div class="info">
+    <kbd>ЛКМ</kbd> вращение &nbsp; <kbd>ПКМ</kbd> перемещение<br>
+    <kbd>Колесо</kbd> масштаб &nbsp; <kbd>Двойной клик</kbd> центрировать
+  </div>
+</div>
+
+<div class="bottom-bar">
+  PMAS 3D Viewer — foggies-studio | Three.js r170 | Модели: CC-BY Lee Perry-Smith / Three.js
+</div>
+
+<!-- Three.js from CDN -->
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
+  }
+}
+</script>
+
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+
+// --- Scene setup ---
+const container = document.getElementById('canvas-container');
+const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.2;
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+container.appendChild(renderer.domElement);
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x0d1117);
+
+const camera = new THREE.PerspectiveCamera(40, window.innerWidth / window.innerHeight, 0.1, 100);
+camera.position.set(0, 0, 3);
+
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true;
+controls.dampingFactor = 0.08;
+controls.target.set(0, 0, 0);
+
+// --- Lights ---
+let lights = [];
+function clearLights() {
+  lights.forEach(l => scene.remove(l));
+  lights = [];
+}
+
+function setupLight1() {
+  clearLights();
+  const amb = new THREE.AmbientLight(0x404050, 0.6);
+  const dir = new THREE.DirectionalLight(0xffffff, 2.5);
+  dir.position.set(2, 3, 4);
+  const fill = new THREE.DirectionalLight(0x8888ff, 0.8);
+  fill.position.set(-2, -1, 2);
+  lights.push(amb, dir, fill);
+  lights.forEach(l => scene.add(l));
+}
+
+function setupLight2() {
+  clearLights();
+  const amb = new THREE.AmbientLight(0x303030, 0.4);
+  const key = new THREE.SpotLight(0xffeedd, 5, 20, Math.PI / 4);
+  key.position.set(3, 4, 3);
+  const rim = new THREE.PointLight(0x4488ff, 3, 10);
+  rim.position.set(-3, 1, -2);
+  lights.push(amb, key, rim);
+  lights.forEach(l => scene.add(l));
+}
+
+function setupLight3() {
+  clearLights();
+  const amb = new THREE.AmbientLight(0xffffff, 0.3);
+  const top = new THREE.DirectionalLight(0xffffff, 1.5);
+  top.position.set(0, 5, 0);
+  const front = new THREE.DirectionalLight(0xffffff, 1.2);
+  front.position.set(0, 0, 5);
+  const left = new THREE.DirectionalLight(0xccddff, 0.8);
+  left.position.set(-4, 2, 2);
+  const right = new THREE.DirectionalLight(0xffddcc, 0.8);
+  right.position.set(4, 2, 2);
+  lights.push(amb, top, front, left, right);
+  lights.forEach(l => scene.add(l));
+}
+
+setupLight1();
+
+// --- Model loading ---
+const loader = new GLTFLoader();
+let currentModel = null;
+let wireframeMode = false;
+let normalsMode = false;
+
+const loadingEl = document.getElementById('loading');
+
+function showLoading() { loadingEl.style.display = 'block'; }
+function hideLoading() { loadingEl.style.display = 'none'; }
+
+function removeModel() {
+  if (currentModel) {
+    scene.remove(currentModel);
+    currentModel.traverse(child => {
+      if (child.geometry) child.geometry.dispose();
+      if (child.material) {
+        if (Array.isArray(child.material)) child.material.forEach(m => m.dispose());
+        else child.material.dispose();
+      }
+    });
+    currentModel = null;
+  }
+}
+
+function fitCamera(object) {
+  const box = new THREE.Box3().setFromObject(object);
+  const center = box.getCenter(new THREE.Vector3());
+  const size = box.getSize(new THREE.Vector3());
+  const maxDim = Math.max(size.x, size.y, size.z);
+  const fov = camera.fov * (Math.PI / 180);
+  let dist = maxDim / (2 * Math.tan(fov / 2));
+  dist *= 1.4;
+  camera.position.set(center.x, center.y, center.z + dist);
+  controls.target.copy(center);
+  controls.update();
+}
+
+function applyVisualMode(object) {
+  object.traverse(child => {
+    if (!child.isMesh) return;
+    if (normalsMode) {
+      child.material = new THREE.MeshNormalMaterial({ wireframe: wireframeMode });
+    } else {
+      if (child.userData.originalMaterial) {
+        child.material = child.userData.originalMaterial.clone();
+        child.material.wireframe = wireframeMode;
+      } else {
+        child.material.wireframe = wireframeMode;
+      }
+    }
+  });
+}
+
+function loadModel(url) {
+  removeModel();
+  showLoading();
+  wireframeMode = false;
+  normalsMode = false;
+  updateButtons();
+
+  loader.load(
+    url,
+    (gltf) => {
+      const model = gltf.scene;
+      model.traverse(child => {
+        if (child.isMesh) {
+          child.userData.originalMaterial = child.material.clone();
+        }
+      });
+      scene.add(model);
+      currentModel = model;
+      fitCamera(model);
+      hideLoading();
+    },
+    (progress) => {
+      // loading progress
+    },
+    (error) => {
+      hideLoading();
+      console.error('Ошибка загрузки модели:', error);
+      alert('Ошибка загрузки модели. Проверьте файл.');
+    }
+  );
+}
+
+// --- UI handlers ---
+const modelSelect = document.getElementById('modelSelect');
+const fileInput = document.getElementById('fileInput');
+const btnWireframe = document.getElementById('btnWireframe');
+const btnNormals = document.getElementById('btnNormals');
+const btnReset = document.getElementById('btnReset');
+const btnLight1 = document.getElementById('btnLight1');
+const btnLight2 = document.getElementById('btnLight2');
+const btnLight3 = document.getElementById('btnLight3');
+
+function updateButtons() {
+  btnWireframe.classList.toggle('active', wireframeMode);
+  btnNormals.classList.toggle('active', normalsMode);
+}
+
+modelSelect.addEventListener('change', () => {
+  fileInput.value = '';
+  loadModel(modelSelect.value);
+});
+
+fileInput.addEventListener('change', (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const url = URL.createObjectURL(file);
+  loadModel(url);
+});
+
+btnWireframe.addEventListener('click', () => {
+  wireframeMode = !wireframeMode;
+  updateButtons();
+  if (currentModel) applyVisualMode(currentModel);
+});
+
+btnNormals.addEventListener('click', () => {
+  normalsMode = !normalsMode;
+  updateButtons();
+  if (currentModel) applyVisualMode(currentModel);
+});
+
+btnReset.addEventListener('click', () => {
+  wireframeMode = false;
+  normalsMode = false;
+  updateButtons();
+  if (currentModel) {
+    applyVisualMode(currentModel);
+    fitCamera(currentModel);
+  }
+});
+
+btnLight1.addEventListener('click', setupLight1);
+btnLight2.addEventListener('click', setupLight2);
+btnLight3.addEventListener('click', setupLight3);
+
+// Double-click to re-center
+renderer.domElement.addEventListener('dblclick', () => {
+  if (currentModel) fitCamera(currentModel);
+});
+
+// --- Resize ---
+window.addEventListener('resize', () => {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+});
+
+// --- Render loop ---
+function animate() {
+  requestAnimationFrame(animate);
+  controls.update();
+  renderer.render(scene, camera);
+}
+animate();
+
+// --- Load default model ---
+loadModel(modelSelect.value);
+</script>
+</body>
+</html>

@@ -95,12 +95,39 @@ open PMAS_Ultimate_Clinical_System_planning_facelift_pro_fixed_plus9.html
 
 ---
 
+## 🧊 3D-просмотрщик головы
+
+Встроенный 3D-вьюер для просмотра моделей головы — полезен для изучения анатомии и планирования.
+
+```
+open 3d_viewer.html
+```
+
+**Функции:**
+- Две предустановленные модели: Lee Perry-Smith (детальный скан) и Face Cap (лицо с морфами)
+- Загрузка своих `.glb` / `.gltf` моделей
+- Режимы: wireframe, нормали, 3 варианта освещения
+- Вращение (ЛКМ), перемещение (ПКМ), масштаб (колесо)
+- Двойной клик — центрировать модель
+
+> **Примечание:** для работы 3D-вьюера нужен локальный HTTP-сервер (Three.js ES-модули):
+> ```
+> python3 -m http.server 8080
+> # затем открыть http://localhost:8080/3d_viewer.html
+> ```
+
+---
+
 ## 📁 Структура
 
 ```
 PMAS/
 ├── PMAS_Ultimate_Clinical_System_planning_facelift_pro_fixed_plus9.html
-├── test_face.jpg          # тестовое фото для проверки
+├── 3d_viewer.html                # 3D-просмотрщик моделей головы
+├── models/
+│   ├── LeePerrySmith.glb         # 3D-скан головы (CC-BY, Lee Perry-Smith)
+│   └── facecap.glb               # Лицо с морфами (Three.js)
+├── test_face.jpg                 # тестовое фото для проверки
 └── README.md
 ```
 
@@ -109,6 +136,10 @@ PMAS/
 ## 📝 Лицензия
 
 MIT
+
+**3D-модели:**
+- `LeePerrySmith.glb` — [CC-BY 3.0](https://creativecommons.org/licenses/by/3.0/) (Infinite-Realities / Lee Perry-Smith)
+- `facecap.glb` — [MIT](https://github.com/mrdoob/three.js/blob/dev/LICENSE) (Three.js)
 
 ---
 

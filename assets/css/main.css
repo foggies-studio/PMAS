@@ -8,6 +8,13 @@
   --btnHover:#cfd9e7;
   --primary:#2563eb;
   --danger:#dc2626;
+  --space-md:12px;
+  --space-sm:8px;
+}
+*,
+*::before,
+*::after{
+  box-sizing:border-box;
 }
 body{
   font-family:Segoe UI,Arial,sans-serif;
@@ -18,6 +25,10 @@ body{
   color:var(--text);
 }
 h2{margin:0 0 10px 0;letter-spacing:.2px;}
+.intro-note{
+  font-size:14px;
+  margin-bottom:14px;
+}
 .panel{
   background:var(--card);
   padding:14px;
@@ -33,7 +44,20 @@ h2{margin:0 0 10px 0;letter-spacing:.2px;}
   border-color:#e2e8f0;
   box-shadow:0 3px 10px rgba(15,23,42,.04);
 }
-.row{display:flex;flex-wrap:wrap;gap:10px;align-items:center;}
+.row{display:flex;flex-wrap:wrap;gap:var(--space-md);align-items:center;}
+.toolbar{
+  display:flex;
+  flex-wrap:wrap;
+  gap:var(--space-md);
+  align-items:center;
+}
+.toolbar button{
+  white-space:nowrap;
+  flex-shrink:0;
+}
+.toolbar + .toolbar{
+  margin-top:var(--space-md);
+}
 label{font-size:12px;color:var(--muted);}
 input[type="text"], input[type="date"], input[type="number"], select, textarea{
   padding:8px 10px;
@@ -129,7 +153,7 @@ button.danger:hover{background:linear-gradient(180deg, #ffd7d7 0%, #fecaca 100%)
   box-shadow:inset 0 1px 0 rgba(255,255,255,.8);
 }
 .small{font-size:12px;color:var(--muted)}
-hr{border:none;border-top:1px solid #e2e8f0;margin:12px 0}
+hr{border:none;border-top:1px solid #e2e8f0;margin:var(--space-md) 0}
 
 #planList,
 #results,
@@ -146,4 +170,147 @@ hr{border:none;border-top:1px solid #e2e8f0;margin:12px 0}
   border:1px solid #e2e8f0;
   border-radius:10px;
   padding:10px;
+}
+
+/* Improve visual spacing in operation-planning block without changing typography size */
+.plan-panel{
+  padding:16px;
+}
+
+.plan-panel > * + *{
+  margin-top:var(--space-md);
+}
+
+.plan-panel > .small{
+  display:block;
+  margin-top:0;
+  margin-bottom:0;
+  line-height:1.4;
+}
+
+.plan-panel > .kpi{
+  margin-top:0;
+  margin-bottom:0;
+  line-height:1.45;
+}
+
+.plan-panel > .small + .kpi{
+  margin-top:var(--space-sm);
+}
+
+.plan-panel .row{
+  gap:var(--space-md);
+  row-gap:var(--space-md);
+  align-items:flex-start;
+}
+
+.plan-panel > .row + .row{
+  margin-top:var(--space-md);
+}
+
+.plan-panel input[type="text"],
+.plan-panel input[type="number"],
+.plan-panel select,
+.plan-panel textarea{
+  margin-top:0;
+}
+
+.plan-panel #planLabel{
+  margin-bottom:var(--space-md);
+}
+
+.plan-panel .small + input[type="text"],
+.plan-panel .small + input[type="number"],
+.plan-panel .small + select,
+.plan-panel .small + textarea{
+  margin-top:var(--space-sm);
+}
+
+.plan-panel .small + .row{
+  margin-top:var(--space-sm);
+}
+
+.plan-panel .plan-actions{
+  margin-top:var(--space-md);
+}
+
+.plan-panel .row + .small{
+  margin-top:var(--space-md);
+}
+
+.plan-panel #planList + .small{
+  margin-top:var(--space-md);
+}
+
+.plan-panel .small + #planList{
+  margin-top:var(--space-sm);
+}
+
+.plan-panel .small + textarea{
+  margin-top:var(--space-sm);
+}
+
+#planList{
+  margin-top:0;
+  margin-bottom:0;
+}
+
+#presetHint{
+  margin-top:var(--space-sm);
+}
+
+#selectedItemInfo{
+  margin-top:4px;
+  min-height:18px;
+}
+
+#asymmetryBox{
+  line-height:1.55;
+}
+
+.metrics-panel{
+  padding:16px;
+}
+
+.metrics-panel .metrics-top{
+  justify-content:space-between;
+  align-items:flex-start;
+  gap:20px;
+}
+
+.metrics-panel .metrics-col{
+  display:flex;
+  flex-direction:column;
+  gap:var(--space-sm);
+  min-width:220px;
+}
+
+.metrics-panel .metrics-col .small{
+  margin:0;
+  line-height:1.4;
+}
+
+.metrics-panel > .small{
+  display:block;
+  margin-bottom:var(--space-sm);
+}
+
+.metrics-panel > .small + #results{
+  margin-top:var(--space-sm);
+}
+
+.top-meta{
+  gap:var(--space-md);
+  row-gap:16px;
+}
+
+.field-stack{
+  display:flex;
+  flex-direction:column;
+  gap:var(--space-sm);
+}
+
+.field-stack .small{
+  margin:0;
+  line-height:1.4;
 }

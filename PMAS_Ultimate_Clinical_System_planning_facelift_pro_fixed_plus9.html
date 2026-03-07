@@ -25,17 +25,17 @@
 <body>
 
 <h2>PMAS Ultimate Clinical System</h2>
-<div class="small">Исправлено: без искажений изображения, рабочий DOCX, AI показывает точки (FaceMesh).</div>
+<div class="small intro-note">Исправлено: без искажений изображения, рабочий DOCX, AI показывает точки (FaceMesh).</div>
 
 <div class="grid">
   <div>
     <div class="panel">
-      <div class="row" style="justify-content:space-between">
-        <div>
+      <div class="row top-meta" style="justify-content:space-between">
+        <div class="field-stack">
           <div class="small">Пациент</div>
           <input type="text" id="patientName" placeholder="ФИО" />
         </div>
-        <div>
+        <div class="field-stack">
           <div class="small">Дата</div>
           <input type="date" id="examDate" />
         </div>
@@ -43,7 +43,7 @@
 
       <hr/>
 
-      <div class="row">
+      <div class="row toolbar">
         <input type="file" id="imageLoader" accept="image/*,.dcm" />
         <button class="primary" id="btnCal">Калибровка</button>
         <button class="primary" id="btnH">Измерить H</button>
@@ -54,7 +54,7 @@
         <button class="danger" id="btnResetToBeforeTop">Откатить к «До»</button>
 
       </div>
-      <div class="row">
+      <div class="row toolbar toolbar-buttons">
         <button id="btnAI">AI ориентиры</button>
         <button id="btnTrichion">Указать Trichion</button>
         <button id="btnPDF">Экспорт PDF</button>
@@ -64,7 +64,7 @@
 
       <div class="kpi" id="status">Загрузите фото (JPG/PNG) или DICOM (.dcm). Для измерений сначала сделайте калибровку.</div>
     
-    <div class="panel">
+    <div class="panel plan-panel">
       <div class="small">План операции</div>
       <div class="kpi">Инструменты планирования рисуются поверх фото и сохраняются в проекте.</div>
 
@@ -115,7 +115,7 @@
             </select>
             <button id="btnAddPreset">Добавить пресет</button>
           </div>
-          <div class="small" id="presetHint" style="margin-top:6px;color:var(--muted)"></div>
+          <div class="small" id="presetHint"></div>
         </div>
         <div>
           <div class="small">Имя</div>
@@ -124,16 +124,16 @@
         </div>
       </div>
 
-      <div class="row">
+      <div class="row plan-actions">
         <button id="btnUseAIasPoints">Выбрать точки из AI</button>
         <span class="badge" id="aiPickBadge" style="display:none">Выбор AI-точек: включен</span>
         <button class="danger" id="btnClearPlan">Очистить план</button>
       </div>
 
-      <div class="small" style="margin-top:8px">Элементы плана</div>
-      <div id="planList" class="small" style="margin-top:6px"></div>
+      <div class="small">Элементы плана</div>
+      <div id="planList" class="small"></div>
 
-      <div class="small" style="margin-top:10px">Заметки (войдут в PDF/DOCX)</div>
+      <div class="small">Заметки (войдут в PDF/DOCX)</div>
       <textarea id="notes" rows="4" style="width:100%; padding:10px;border:1px solid var(--border);border-radius:10px;resize:vertical" placeholder="План, риски, обсужденные ожидания, объем вмешательства..."></textarea>
       <hr/>
       <div class="small">Планируемое смещение (мм)</div>
@@ -163,19 +163,19 @@
 
       <hr/>
       <div class="small">Авторасчёт асимметрии (R vs L)</div>
-      <div id="asymmetryBox" class="small" style="margin-top:6px; line-height:1.5">—</div>
+      <div id="asymmetryBox" class="small">—</div>
 
     </div>
 
 </div>
 
-    <div class="panel">
-      <div class="row" style="justify-content:space-between;align-items:flex-end">
-        <div>
+    <div class="panel metrics-panel">
+      <div class="row metrics-top">
+        <div class="metrics-col">
           <div class="small">Калибровка</div>
           <div><span class="badge" id="scaleBadge">—</span></div>
         </div>
-        <div>
+        <div class="metrics-col">
           <div class="small">Масштаб</div>
           <div class="row">
             <button id="btnZoomOut">−</button>

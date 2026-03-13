@@ -1155,3 +1155,35 @@ document.head.appendChild(style);
 
 // Init measurements list
 render3dPlanList();
+
+// Expose internals for programmatic annotation placement
+window._3d = {
+  get scene() { return scene; },
+  get camera() { return camera; },
+  get currentModel() { return currentModel; },
+  get raycaster() { return raycaster; },
+  get mouse() { return mouse; },
+  setTool: setTool3D,
+  addMarker: addMarker3D,
+  addLine: addLine3D,
+  addArrow: addArrow3D,
+  addLabel: addLabel3D,
+  finalize: finalizePlanItem,
+  dist: dist3d,
+  midpoint: midpoint,
+  angle: computeAngle3,
+  formatDist: formatDist,
+  clearAll: clearAll3D,
+  rebuild: rebuildAllVisuals,
+  raycastAt(cx, cy) {
+    const container = document.getElementById('canvas3d-container');
+    const rect = container.getBoundingClientRect();
+    mouse.x = ((cx - rect.left) / rect.width) * 2 - 1;
+    mouse.y = -((cy - rect.top) / rect.height) * 2 + 1;
+    raycaster.setFromCamera(mouse, camera);
+    const meshes = [];
+    currentModel.traverse(c => { if (c.isMesh) meshes.push(c); });
+    const hits = raycaster.intersectObjects(meshes, false);
+    return hits.length > 0 ? hits[0].point.clone() : null;
+  }
+};

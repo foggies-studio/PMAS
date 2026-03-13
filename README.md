@@ -60,13 +60,14 @@
 git clone https://github.com/foggies-studio/PMAS.git
 cd PMAS
 
-# Открыть в браузере
-open PMAS_Ultimate_Clinical_System_planning_facelift_pro_fixed_plus9.html
+# Поднять локальный сервер
+python3 -m http.server 8080
+
+# Открыть основной интерфейс
+open http://localhost:8080/PMAS_Ultimate_Clinical_System_planning_facelift_pro_fixed_plus9.html
 ```
 
-Или просто откройте HTML-файл двойным кликом — всё работает локально.
-
-> **Требования:** современный браузер (Chrome, Edge, Firefox). Для AI-анализа нужен интернет (загрузка модели TensorFlow.js).
+> **Требования:** современный браузер (Chrome, Edge, Firefox). Для AI-анализа и 3D-страницы нужен интернет для загрузки JS-библиотек.
 
 ---
 
@@ -97,24 +98,28 @@ open PMAS_Ultimate_Clinical_System_planning_facelift_pro_fixed_plus9.html
 
 ## 🧊 3D-просмотрщик головы
 
-Встроенный 3D-вьюер для просмотра моделей головы — полезен для изучения анатомии и планирования.
+В PMAS теперь две отдельные страницы: `2D View` для клинической работы и `3D View` для просмотра моделей головы. Между ними можно переключаться через плашки наверху.
 
 ```
-open 3d_viewer.html
+http://localhost:8080/3d_viewer.html
 ```
 
 **Функции:**
 - Две предустановленные модели: Lee Perry-Smith (детальный скан) и Face Cap (лицо с морфами)
-- Загрузка своих `.glb` / `.gltf` моделей
+- Загрузка файлов Kiri: `.obj`, `.stl`, `.fbx`, `.gltf`, `.glb`, `.usdz`, `.ply`, `.xyz`
 - Режимы: wireframe, нормали, 3 варианта освещения
 - Вращение (ЛКМ), перемещение (ПКМ), масштаб (колесо)
 - Двойной клик — центрировать модель
 
-> **Примечание:** для работы 3D-вьюера нужен локальный HTTP-сервер (Three.js ES-модули):
-> ```
-> python3 -m http.server 8080
-> # затем открыть http://localhost:8080/3d_viewer.html
-> ```
+### Kiri Engine: как сделать 3D-скан головы
+
+1. В Kiri Engine создайте новый проект через `+` и выберите режим `Photo Scan`.
+2. Снимайте голову минимум в 3 поясах: уровень глаз, чуть выше линии волос и нижний пояс вокруг челюсти/шеи.
+3. Держите равномерный свет, не размывайте кадры, добавьте крупные планы ушей, висков и линии волос.
+4. После обработки экспортируйте модель в один из поддерживаемых форматов Kiri: `OBJ`, `FBX`, `STL`, `GLB`, `GLTF`, `USDZ`, `PLY` или `XYZ`.
+5. Откройте страницу `3D View` и загрузите экспортированный файл.
+
+> **Практически:** для Kiri лучше использовать `GLB`. Один файл проще переносить в PMAS, и он надёжнее загружается локально.
 
 ---
 
@@ -123,7 +128,7 @@ open 3d_viewer.html
 ```
 PMAS/
 ├── PMAS_Ultimate_Clinical_System_planning_facelift_pro_fixed_plus9.html
-├── 3d_viewer.html                # 3D-просмотрщик моделей головы
+├── 3d_viewer.html                # отдельная 3D-страница
 ├── models/
 │   ├── LeePerrySmith.glb         # 3D-скан головы (CC-BY, Lee Perry-Smith)
 │   └── facecap.glb               # Лицо с морфами (Three.js)

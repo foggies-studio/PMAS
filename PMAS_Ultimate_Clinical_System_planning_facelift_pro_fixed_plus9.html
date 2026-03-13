@@ -26,6 +26,10 @@
 
 <h2>PMAS Ultimate Clinical System</h2>
 <div class="small intro-note">Исправлено: без искажений изображения, рабочий DOCX, AI показывает точки (FaceMesh).</div>
+<div class="page-switch" aria-label="Переключение режима PMAS">
+  <a class="page-switch-link active" href="./PMAS_Ultimate_Clinical_System_planning_facelift_pro_fixed_plus9.html">2D View</a>
+  <a class="page-switch-link" href="./3d_viewer.html">3D View</a>
+</div>
 
 <div class="grid">
   <div>
@@ -203,14 +207,24 @@
     </div>
   </div>
 
-  <div class="panel" id="viewerWrap">
-    <div id="viewport">
-      <img id="photo" alt="patient photo" />
-      <canvas id="overlay"></canvas>
+  <div class="panel viewer-panel">
+    <div class="viewer-head">
+      <div>
+        <div class="viewer-title">2D анализ и планирование</div>
+        <div class="small">Фото пациента, AI ориентиры и клинические измерения.</div>
+      </div>
+      <a class="viewer-jump" href="./3d_viewer.html">Открыть 3D</a>
+    </div>
+
+    <div id="viewerWrap">
+      <div id="viewport">
+        <img id="photo" alt="patient photo" />
+        <canvas id="overlay"></canvas>
+      </div>
     </div>
   </div>
-</div>
-
+  </div>
+  
 <script src="./assets/js/01-state.js"></script>
 <script src="./assets/js/02-geometry.js"></script>
 <script src="./assets/js/03-render.js"></script>

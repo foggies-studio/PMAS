@@ -14,9 +14,19 @@ canvas { display: block; }
 .panel {
   position: absolute; top: 16px; left: 16px;
   background: rgba(22,27,34,0.92); border: 1px solid #30363d;
-  border-radius: 12px; padding: 20px; width: 280px;
+  border-radius: 12px; padding: 20px; width: 320px;
   backdrop-filter: blur(12px);
 }
+.page-switch {
+  display: flex; gap: 8px; padding: 6px; margin-bottom: 16px;
+  border: 1px solid #30363d; border-radius: 999px; background: rgba(13,17,23,0.75);
+}
+.page-switch-link {
+  flex: 1; padding: 9px 12px; border-radius: 999px; text-align: center;
+  font-size: 12px; font-weight: 600; text-decoration: none; color: #8b949e;
+}
+.page-switch-link:hover { background: #21262d; color: #c9d1d9; }
+.page-switch-link.active { background: #1f6feb; color: #fff; }
 .panel h1 { font-size: 18px; margin-bottom: 4px; color: #58a6ff; }
 .panel .subtitle { font-size: 12px; color: #8b949e; margin-bottom: 16px; }
 .panel label { display: block; font-size: 13px; color: #8b949e; margin-bottom: 4px; margin-top: 12px; }
@@ -65,6 +75,10 @@ canvas { display: block; }
 </div>
 
 <div class="panel">
+  <div class="page-switch" aria-label="Переключение режима PMAS">
+    <a class="page-switch-link" href="./PMAS_Ultimate_Clinical_System_planning_facelift_pro_fixed_plus9.html">2D View</a>
+    <a class="page-switch-link active" href="./3d_viewer.html">3D View</a>
+  </div>
   <h1>PMAS 3D Viewer</h1>
   <div class="subtitle">Просмотр 3D-моделей головы</div>
 
@@ -74,8 +88,8 @@ canvas { display: block; }
     <option value="models/facecap.glb">Face Cap (лицо с морфами)</option>
   </select>
 
-  <label>Загрузить свою модель (.glb / .gltf)</label>
-  <input type="file" id="fileInput" accept=".glb,.gltf">
+  <label>Загрузить модель Kiri (.glb / .gltf / .obj / .fbx / .stl / .usdz / .ply / .xyz)</label>
+  <input type="file" id="fileInput" accept=".glb,.gltf,.obj,.fbx,.stl,.usdz,.ply,.xyz">
 
   <div class="btn-row">
     <button class="btn" id="btnWireframe">Wireframe</button>
@@ -90,6 +104,7 @@ canvas { display: block; }
   </div>
 
   <div class="info">
+    Форматы Kiri: <strong>OBJ, STL, FBX, GLTF, GLB, USDZ, PLY, XYZ</strong><br>
     <kbd>ЛКМ</kbd> вращение &nbsp; <kbd>ПКМ</kbd> перемещение<br>
     <kbd>Колесо</kbd> масштаб &nbsp; <kbd>Двойной клик</kbd> центрировать
   </div>
@@ -113,6 +128,11 @@ canvas { display: block; }
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { OBJLoader } from 'three/addons/loaders/OBJLoader.js';
+import { FBXLoader } from 'three/addons/loaders/FBXLoader.js';
+import { STLLoader } from 'three/addons/loaders/STLLoader.js';
+import { PLYLoader } from 'three/addons/loaders/PLYLoader.js';
+import { USDZLoader } from 'three/addons/loaders/USDZLoader.js';
 
 // --- Scene setup ---
 const container = document.getElementById('canvas-container');
@@ -182,7 +202,12 @@ function setupLight3() {
 setupLight1();
 
 // --- Model loading ---
-const loader = new GLTFLoader();
+const gltfLoader = new GLTFLoader();
+const objLoader = new OBJLoader();
+const fbxLoader = new FBXLoader();
+const stlLoader = new STLLoader();
+const plyLoader = new PLYLoader();
+const usdzLoader = new USDZLoader();
 let currentModel = null;
 let wireframeMode = false;
 let normalsMode = false;
@@ -192,15 +217,23 @@ const loadingEl = document.getElementById('loading');
 function showLoading() { loadingEl.style.display = 'block'; }
 function hideLoading() { loadingEl.style.display = 'none'; }
 
+function disposeMaterial(material) {
+  if (!material) return;
+  if (Array.isArray(material)) {
+    material.forEach(disposeMaterial);
+    return;
+  }
+  if (typeof material.dispose === 'function') {
+    material.dispose();
+  }
+}
+
 function removeModel() {
   if (currentModel) {
     scene.remove(currentModel);
     currentModel.traverse(child => {
       if (child.geometry) child.geometry.dispose();
-      if (child.material) {
-        if (Array.isArray(child.material)) child.material.forEach(m => m.dispose());
-        else child.material.dispose();
-      }
+      if (child.material) disposeMaterial(child.material);
     });
     currentModel = null;
   }
@@ -223,9 +256,11 @@ function applyVisualMode(object) {
   object.traverse(child => {
     if (!child.isMesh) return;
     if (normalsMode) {
+      disposeMaterial(child.material);
       child.material = new THREE.MeshNormalMaterial({ wireframe: wireframeMode });
     } else {
       if (child.userData.originalMaterial) {
+        disposeMaterial(child.material);
         child.material = child.userData.originalMaterial.clone();
         child.material.wireframe = wireframeMode;
       } else {
@@ -235,36 +270,132 @@ function applyVisualMode(object) {
   });
 }
 
-function loadModel(url) {
+function prepareModel(model) {
+  model.traverse(child => {
+    if (child.isMesh) {
+      if (child.geometry && !child.geometry.attributes.normal) {
+        child.geometry.computeVertexNormals();
+      }
+      if (!child.material) {
+        child.material = new THREE.MeshStandardMaterial({ color: 0xcbd5e1, metalness: 0.08, roughness: 0.72 });
+      }
+      child.userData.originalMaterial = child.material.clone();
+    }
+  });
+  scene.add(model);
+  currentModel = model;
+  fitCamera(model);
+  hideLoading();
+}
+
+async function buildXYZPoints(url) {
+  const text = await fetch(url).then((response) => response.text());
+  const positions = [];
+  const colors = [];
+
+  text.split(/\r?\n/).forEach((line) => {
+    const parts = line.trim().split(/\s+/);
+    if (parts.length < 3) return;
+    const x = Number(parts[0]);
+    const y = Number(parts[1]);
+    const z = Number(parts[2]);
+    if ([x, y, z].some((value) => Number.isNaN(value))) return;
+    positions.push(x, y, z);
+
+    if (parts.length >= 6) {
+      colors.push(Number(parts[3]) / 255, Number(parts[4]) / 255, Number(parts[5]) / 255);
+    }
+  });
+
+  if (!positions.length) {
+    throw new Error('XYZ file has no readable points.');
+  }
+
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+  if (colors.length === positions.length) {
+    geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+  }
+
+  const material = new THREE.PointsMaterial({
+    size: 0.006,
+    vertexColors: colors.length === positions.length,
+    color: colors.length === positions.length ? 0xffffff : 0x93c5fd
+  });
+
+  return new THREE.Points(geometry, material);
+}
+
+function loadModel(url, extension = 'glb') {
   removeModel();
   showLoading();
   wireframeMode = false;
   normalsMode = false;
   updateButtons();
 
-  loader.load(
-    url,
-    (gltf) => {
-      const model = gltf.scene;
-      model.traverse(child => {
-        if (child.isMesh) {
-          child.userData.originalMaterial = child.material.clone();
-        }
+  const onError = (error) => {
+    hideLoading();
+    console.error('Ошибка загрузки модели:', error);
+    alert('Ошибка загрузки модели. Сайт принимает OBJ, STL, FBX, GLTF, GLB, USDZ, PLY и XYZ из Kiri.');
+  };
+
+  if (extension === 'glb' || extension === 'gltf') {
+    gltfLoader.load(url, (gltf) => prepareModel(gltf.scene), undefined, onError);
+    return;
+  }
+
+  if (extension === 'obj') {
+    objLoader.load(url, (object) => {
+      object.traverse((child) => {
+        if (!child.isMesh) return;
+        child.material = new THREE.MeshStandardMaterial({ color: 0xcbd5e1, metalness: 0.08, roughness: 0.72 });
       });
-      scene.add(model);
-      currentModel = model;
-      fitCamera(model);
-      hideLoading();
-    },
-    (progress) => {
-      // loading progress
-    },
-    (error) => {
-      hideLoading();
-      console.error('Ошибка загрузки модели:', error);
-      alert('Ошибка загрузки модели. Проверьте файл.');
-    }
-  );
+      prepareModel(object);
+    }, undefined, onError);
+    return;
+  }
+
+  if (extension === 'fbx') {
+    fbxLoader.load(url, (object) => prepareModel(object), undefined, onError);
+    return;
+  }
+
+  if (extension === 'stl') {
+    stlLoader.load(url, (geometry) => {
+      geometry.computeVertexNormals();
+      const material = new THREE.MeshStandardMaterial({ color: 0xcbd5e1, metalness: 0.08, roughness: 0.72 });
+      prepareModel(new THREE.Mesh(geometry, material));
+    }, undefined, onError);
+    return;
+  }
+
+  if (extension === 'ply') {
+    plyLoader.load(url, (geometry) => {
+      geometry.computeVertexNormals();
+      const material = new THREE.MeshStandardMaterial({
+        color: 0xcbd5e1,
+        metalness: 0.08,
+        roughness: 0.72,
+        vertexColors: !!geometry.getAttribute('color')
+      });
+      prepareModel(new THREE.Mesh(geometry, material));
+    }, undefined, onError);
+    return;
+  }
+
+  if (extension === 'usdz') {
+    usdzLoader.load(url, (group) => prepareModel(group), undefined, onError);
+    return;
+  }
+
+  if (extension === 'xyz') {
+    buildXYZPoints(url)
+      .then((points) => prepareModel(points))
+      .catch(onError);
+    return;
+  }
+
+  onError(new Error(`Unsupported extension: ${extension}`));
 }
 
 // --- UI handlers ---
@@ -290,8 +421,15 @@ modelSelect.addEventListener('change', () => {
 fileInput.addEventListener('change', (e) => {
   const file = e.target.files[0];
   if (!file) return;
+  const extension = file.name.split('.').pop()?.toLowerCase() || '';
+  const supported = new Set(['glb', 'gltf', 'obj', 'fbx', 'stl', 'usdz', 'ply', 'xyz']);
+  if (!supported.has(extension)) {
+    alert('Поддерживаются форматы Kiri: OBJ, STL, FBX, GLTF, GLB, USDZ, PLY, XYZ.');
+    fileInput.value = '';
+    return;
+  }
   const url = URL.createObjectURL(file);
-  loadModel(url);
+  loadModel(url, extension);
 });
 
 btnWireframe.addEventListener('click', () => {
